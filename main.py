@@ -2,15 +2,7 @@ import random
 import os
 import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    filters,
-    CallbackContext,
-    JobQueue
-)
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, CallbackContext
 from faker import Faker
 from datetime import datetime
 
@@ -134,98 +126,6 @@ async def help_command(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # نفس الرسالة التي تظهر عند البداية (التعليمات)
-    help_text = (
-        "✨ هذا البوت يقوم بتعديل ملفات .ovpn.\n\n"
-        "🔹 الخطوات:\n"
-        "1. أرسل لي ملف .ovpn.\n"
-        "2. اختر اسم عشوائي أو قم بتغيير اسم الملف كما تريد.\n"
-        "3. سأقوم بإعادة إرسال الملف المعدل إليك.\n\n"
-        "🔔 تأكد من أن المواقع المدعومة هي: [VPNJantit](https://www.vpnjantit.com/free-openvpn)\n"
-        "إذا كنت بحاجة إلى المزيد من المساعدة، يمكنك الرجوع إلى الصفحة الرئيسية."
-    )
-
-    # تعديل الرسالة الأصلية التي تم إرسالها عند بداية البوت
-    await context.user_data['welcome_message'].edit_text(help_text, reply_markup=reply_markup)
-    # دالة استقبال الملفات
-async def handle_file(update: Update, context: CallbackContext):
-    user = update.message.from_user
-    file = update.message.document
-
-    if file.file_name.endswith('.ovpn'):
-        # تنزيل الملف
-        file_path = file.file_id + ".ovpn"
-        file_info = await file.get_file()  # الحصول على معلومات الملف
-        await file_info.download_to_drive(file_path)  # تنزيل الملف إلى النظام المحلي
-
-        # طلب اسم مخصص من المستخدم
-        await update.message.reply_text(
-            "إذا كنت ترغب في تغيير اسم الملف المعدل، أرسل الاسم الجديد (مع إضافة .ovpn). إذا كنت لا ترغب في تغييره، اتركه فارغًا.\n\n"
-            "أو اختر اسم عشوائي باستخدام الزر أدناه 👇",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("اختيار اسم عشوائي 🎲", callback_data="random_name")]
-            ])
-        )
-
-        # حفظ اسم الملف
-        context.user_data['file_path'] = file_path
-
-# دالة معالجة اسم مخصص للملف
-async def handle_custom_name(update: Update, context: CallbackContext):
-    custom_name = update.message.text.strip()
-    file_path = context.user_data.get('file_path')
-
-    if file_path:
-        # تعديل الملف بناءً على الاسم المخصص
-        modified_file_path = modify_file(file_path, custom_name)
-
-        # إعادة إرسال الملف المعدل إلى المستخدم
-        await context.bot.send_document(
-            chat_id=update.message.chat_id,
-            document=open(modified_file_path, 'rb'),
-            caption="تم تعديل ملفك بنجاح. شكراً لاستخدامك البوت! 😊"
-        )
-
-        # إرسال الملف المعدل إلى القناة
-        user_name = update.message.from_user.username if update.message.from_user.username else update.message.from_user.full_name
-        await context.bot.send_document(
-            chat_id=CHANNEL_ID,
-            document=open(modified_file_path, 'rb'),
-            caption=f"تم التعديل بواسطة: @{user_name}" if update.message.from_user.username else f"تم التعديل بواسطة: {user_name}\n\nعدد التعديلات: {context.user_data.get('total_files', 0)}"
-        )
-
-        # تنظيف الملفات المؤقتة
-        os.remove(file_path)
-        os.remove(modified_file_path)
-
-        # مسح اسم الملف
-        context.user_data.clear()
-    else:
-        await update.message.reply_text("حدث خطأ أثناء معالجة الملف. حاول من جديد.")
-
-# دالة /start - رسالة الترحيب
-async def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("التعليمات 📚", callback_data="help")],
-        [InlineKeyboardButton("حالة البوت 📊", callback_data="bot_status")],
-        [InlineKeyboardButton("المطور 👨‍💻", url="https://t.me/m_23322")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    welcome_message = (
-        "مرحباً! 👋\nأنا بوت تعديل ملفات .ovpn.\n\n"
-        "للبدء، أرسل لي ملف .ovpn لتعديله.\n\n"
-        "اختر من الخيارات أدناه لمزيد من المعلومات."
-    )
-    context.user_data['welcome_message'] = await update.message.reply_text(welcome_message, reply_markup=reply_markup)
-
-# دالة عرض التعليمات
-async def help_command(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("رجوع إلى الصفحة الرئيسية 🏠", callback_data='back_to_home')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # نفس الرسالة التي تظهر عند البداية (التعليمات)
     help_text = (
         "✨ هذا البوت يقوم بتعديل ملفات .ovpn.\n\n"
         "🔹 الخطوات:\n"
@@ -235,12 +135,10 @@ async def help_command(update: Update, context: CallbackContext):
         "إذا كنت بحاجة إلى المزيد من المساعدة، يمكنك الرجوع إلى الصفحة الرئيسية."
     )
 
-    # تعديل الرسالة الأصلية التي تم إرسالها عند بداية البوت
     await context.user_data['welcome_message'].edit_text(help_text, reply_markup=reply_markup)
 
 # دالة العودة إلى الصفحة الرئيسية
 async def back_to_home(update: Update, context: CallbackContext):
-    # إعادة إرسال الرسالة الترحيبية الأصلية مع الزر الخاص بالتعليمات والمطور
     keyboard = [
         [InlineKeyboardButton("التعليمات 📚", callback_data="help")],
         [InlineKeyboardButton("حالة البوت 📊", callback_data="bot_status")],
@@ -248,14 +146,12 @@ async def back_to_home(update: Update, context: CallbackContext):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # رسالة الترحيب الأصلية
     welcome_message = (
         "مرحباً! 👋\nأنا بوت تعديل ملفات .ovpn.\n\n"
         "للبدء، أرسل لي ملف .ovpn لتعديله.\n\n"
         "اختر من الخيارات أدناه لمزيد من المعلومات."
     )
 
-    # تعديل الرسالة الأصلية التي تم إرسالها عند بداية البوت
     await context.user_data['welcome_message'].edit_text(welcome_message, reply_markup=reply_markup)
 
 # دالة حالة البوت
@@ -279,23 +175,19 @@ async def bot_status(update: Update, context: CallbackContext):
 
 # دالة اختيار اسم عشوائي
 async def random_name(update: Update, context: CallbackContext):
-    # اختيار اسم عشوائي باستخدام Faker
-    random_name = fake.word()  # يمكن استخدام faker لإنتاج كلمات عشوائية
-    random_name_with_extension = f"{random_name}.ovpn"  # إضافة الامتداد .ovpn
+    random_name = fake.word()
+    random_name_with_extension = f"{random_name}.ovpn"
 
     file_path = context.user_data.get('file_path')
     if file_path:
-        # تعديل الملف باستخدام الاسم العشوائي
         modified_file_path = modify_file(file_path, random_name_with_extension)
 
-        # إرسال الملف المعدل للمستخدم
         await context.bot.send_document(
             chat_id=update.callback_query.message.chat.id,
             document=open(modified_file_path, 'rb'),
             caption=f"تم اختيار اسم عشوائي للملف: {random_name_with_extension} 🎉\nتم تعديل الملف بنجاح! 😊"
         )
 
-        # إرسال الملف المعدل إلى القناة
         user_name = update.callback_query.from_user.username if update.callback_query.from_user.username else update.callback_query.from_user.full_name
         await context.bot.send_document(
             chat_id=CHANNEL_ID,
@@ -303,15 +195,10 @@ async def random_name(update: Update, context: CallbackContext):
             caption=f"تم التعديل بواسطة: @{user_name}" if update.callback_query.from_user.username else f"تم التعديل بواسطة: {user_name}\n\nعدد التعديلات: {context.user_data.get('total_files', 0)}"
         )
 
-        # تنظيف الملفات المؤقتة
         os.remove(file_path)
         os.remove(modified_file_path)
 
-        # مسح اسم الملف
         context.user_data.clear()
-
-    else:
-        await update.callback_query.message.reply_text("حدث خطأ أثناء معالجة الملف. حاول من جديد.")
 
 # دالة معالجة الأزرار
 async def button(update: Update, context: CallbackContext):
@@ -341,4 +228,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
